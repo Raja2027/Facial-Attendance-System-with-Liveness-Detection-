@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Registration</title>
+</head>
+<body>
+
+<h2>Register Person</h2>
+
+<input type="text" id="name" placeholder="Name"><br>
+<input type="text" id="mobile" placeholder="Mobile"><br>
+<input type="email" id="email" placeholder="Email"><br>
+<input type="date" id="dob"><br>
+
+<select id="type">
+    <option value="student">Student</option>
+    <option value="faculty">Faculty</option>
+</select><br><br>
+
+<video id="video" width="400" autoplay muted></video><br>
+<button onclick="startRecording()">Next</button>
+
+<div id="status"></div>
+
+<script>
+
+    let video = document.getElementById("video");
+    let recordedChunks = [];
+    let mediaRecorder;
+
+    async function startRecording() {
+
+        recordedChunks = [];
+
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+
+        document.getElementById("status").innerText = "Recording...";
+
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) {
+                recordedChunks.push(e.data);
+            }
+        };
+
+        mediaRecorder.start();
+
+        // Record for 2 seconds
+        setTimeout(() => {
+            mediaRecorder.stop();
+            document.getElementById("status").innerText = "Processing...";
+        }, 2000);
+
+        mediaRecorder.onstop = uploadVideo;
+    }
+
+    function uploadVideo() {
+
+        const blob = new Blob(recordedChunks, { type: "video/webm" });
+        const formData = new FormData();
+
+        formData.append("video", blob);  // MUST match Python
+        formData.append("name", document.getElementById("name").value);
+        formData.append("mobile", document.getElementById("mobile").value);
+        formData.append("email", document.getElementById("email").value);
+        formData.append("dob", document.getElementById("dob").value);
+        formData.append("type", document.getElementById("type").value);
+
+        fetch("http://localhost:8080/persons/register-with-video", {
+            method: "POST",
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+
+                if (data.error) {
+                    document.getElementById("status").innerText = data.error;
+                } else {
+                    document.getElementById("status").innerText =
+                        "Registered: " + data.registrationNumber;
+                }
+
+            })
+            .catch(err => {
+                document.getElementById("status").innerText = "Error occurred";
+                console.error(err);
+            });
+    }
+
+</script>
+
+</body>
+</html>
