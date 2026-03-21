@@ -15,19 +15,8 @@ class FacenetVideo:
 
 
     def extract_face(self, img):
-        
         img_rgb = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-        results = self.detector.detect_faces(img_rgb)
-
-        if not results:
-            raise ValueError("No face detected")
-
-        x, y, w, h = results[0]['box']
-        x, y = max(0, x), max(0, y)
-
-        face = img_rgb[y:y+h, x:x+w]
-        face = cv.resize(face, self.target_size)
-        
+        face = cv.resize(img_rgb, self.target_size)
         return face
 
     def get_embedding(self,face):

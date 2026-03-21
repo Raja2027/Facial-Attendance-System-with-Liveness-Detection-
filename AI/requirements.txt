@@ -8,4 +8,4 @@ scipy
 flask 
 flask_cors
 insightface
-onnxruntime
+torch

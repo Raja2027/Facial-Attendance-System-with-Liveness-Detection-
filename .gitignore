@@ -13,7 +13,7 @@ target/
 ############################
 # ===== SPRING BOOT =====
 ############################
-
+applocation.properties
 application-local.properties
 application-secret.properties
 

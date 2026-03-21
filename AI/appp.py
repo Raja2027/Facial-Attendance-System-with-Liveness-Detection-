@@ -2,7 +2,7 @@ import os
 import tempfile
 import numpy as np
 import cv2 as cv
-import onnxruntime as ort
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
@@ -22,35 +22,10 @@ app_face.prepare(ctx_id=0)
 # =========================
 # LOAD ANTI-SPOOF MODEL
 # =========================
-spoof_session = ort.InferenceSession("models/best_model_quantized.onnx")
-spoof_input_name = spoof_session.get_inputs()[0].name
-spoof_input_shape = spoof_session.get_inputs()[0].shape
 
-print("Anti-Spoof Model Input Shape:", spoof_input_shape)
 
-def check_spoof(face_img):
 
-    face = cv.resize(face_img, (128, 128))
 
-    face = face.astype(np.float32)
-    face = (face - 127.5) / 128.0  # 🔥 CORRECT normalization
-
-    face = np.transpose(face, (2, 0, 1))
-    face = np.expand_dims(face, axis=0)
-
-    outputs = spoof_session.run(None, {spoof_input_name: face})
-    logits = outputs[0][0]
-
-    # Softmax
-    exp_scores = np.exp(logits - np.max(logits))
-    probs = exp_scores / exp_scores.sum()
-
-    real_prob = float(probs[0])
-    fake_prob = float(probs[1])
-
-    print("Real Prob:", real_prob, "Fake Prob:", fake_prob)
-
-    return real_prob, fake_prob
 # =========================
 # FLASK INIT
 # =========================
@@ -92,13 +67,13 @@ def generate_embedding():
             return jsonify({"error": "Face crop failed"}), 200
 
         # 🔒 Anti-spoof check
-        real_score, fake_score = check_spoof(face_crop)
+        real_score, fake_score = anti_spoof.predict(face_crop)
 
-        if fake_score > 0.6:
+        if fake_score > 0.5:
             return jsonify({"error": "Spoof detected"}), 200
 
         # 🔥 Generate embedding using your Facenet pipeline
-        face_processed = image_loader.extract_face(img)
+        face_processed = image_loader.extract_face(face_crop)
 
         if face_processed is None:
             return jsonify({"error": "Face extraction failed"}), 200
@@ -159,9 +134,9 @@ def train_face():
                 if face_crop.size == 0:
                     continue
 
-                real_score, fake_score = check_spoof(face_crop)
+                real_score, fake_score = anti_spoof.predict(face_crop)
 
-                if fake_score > real_score:
+                if fake_score > 0.5:
                     cap.release()
                     return jsonify({"error": "Spoof detected in video"}), 200
 
