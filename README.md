@@ -1,3 +1,12 @@
+---
+title: Facial Ai Engine
+emoji: 🏢
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+app_port: 5001
+---
 # Facial Attendance System with Liveness Detection
 
 A comprehensive, fully-dockerized Facial Attendance Management System built with a Spring Boot (Java) backend, a Flask (Python) AI engine, and MongoDB Atlas.
