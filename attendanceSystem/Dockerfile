@@ -5,6 +5,8 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 # Build the application skipping tests to speed up the process
+# Limit Maven memory to prevent OOM on free tier
+ENV MAVEN_OPTS="-Xmx300m"
 RUN mvn clean package -DskipTests
 
 # Stage 2: Run the application
@@ -14,4 +16,5 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Limit Java runtime memory strictly below 512MB to prevent Render OOM
+ENTRYPOINT ["java", "-Xmx300m", "-Xss512k", "-XX:CICompilerCount=2", "-jar", "app.jar"]
