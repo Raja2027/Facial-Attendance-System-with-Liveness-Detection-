@@ -1,171 +1,179 @@
-import os
-import tempfile
-import numpy as np
-import cv2 as cv
+import os 
+import sys 
 
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+sys .path .append (os .path .abspath ("../antiSpoofing"))
 
-from app.real_time_loading.loading_via_video import FacenetVideo
-from app.real_time_loading.Facenet import FaceLoading
-from insightface.app import FaceAnalysis
+import tempfile 
+import numpy as np 
+import cv2 as cv 
 
-# =========================
-# LOAD INSIGHTFACE
-# =========================
-app_face = FaceAnalysis(
-    name="buffalo_l",
-    providers=['CPUExecutionProvider']
-)
-app_face.prepare(ctx_id=0)
+from src .anti_spoof_predict import AntiSpoofPredict 
+from src .generate_patches import CropImage 
+from src .utility import parse_model_name 
 
-# =========================
-# LOAD ANTI-SPOOF MODEL
-# =========================
+model_test =AntiSpoofPredict (0 )
+image_cropper =CropImage ()
+MODEL_DIR =os .path .abspath ("../antiSpoofing/resources/anti_spoof_models")
 
+from flask import Flask ,request ,jsonify 
+from flask_cors import CORS 
 
+from app .real_time_loading .loading_via_video import FacenetVideo 
+from app .real_time_loading .Facenet import FaceLoading 
 
+def check_real_face (image ):
 
-# =========================
-# FLASK INIT
-# =========================
-app = Flask(__name__)
-CORS(app)
+    image_bbox =model_test .get_bbox (image )
 
-video_loader = FacenetVideo()
-image_loader = FaceLoading()
+    if image_bbox is None :
+        print ("[!] No face detected")
+        return False ,None 
 
-# ==============================
-# IMAGE → EMBEDDING (Attendance)
-# ==============================
-@app.route('/generate_embedding', methods=['POST'])
-def generate_embedding():
-    try:
-        if 'file' not in request.files:
-            return jsonify({"error": "No file provided"}), 400
+    prediction =np .zeros ((1 ,3 ))
 
-        file = request.files['file']
-        filestr = file.read()
-        npimg = np.frombuffer(filestr, np.uint8)
-        img = cv.imdecode(npimg, cv.IMREAD_COLOR)
+    for model_name in os .listdir (MODEL_DIR ):
 
-        if img is None:
-            return jsonify({"error": "Failed to decode image"}), 400
+        model_path =os .path .join (MODEL_DIR ,model_name )
 
-        # 🔍 Detect face using InsightFace
-        faces = app_face.get(img)
+        h_input ,w_input ,model_type ,scale =parse_model_name (model_name )
 
-        if len(faces) == 0:
-            return jsonify({"error": "No face detected"}), 200
+        param ={
+        "org_img":image ,
+        "bbox":image_bbox ,
+        "scale":scale ,
+        "out_w":w_input ,
+        "out_h":h_input ,
+        "crop":True ,
+        }
 
-        # Crop first detected face
-        bbox = faces[0].bbox.astype(int)
-        x1, y1, x2, y2 = bbox
-        face_crop = img[y1:y2, x1:x2]
+        if scale is None :
+            param ["crop"]=False 
 
-        if face_crop.size == 0:
-            return jsonify({"error": "Face crop failed"}), 200
+        img =image_cropper .crop (**param )
 
-        # 🔒 Anti-spoof check
-        real_score, fake_score = anti_spoof.predict(face_crop)
+        prediction +=model_test .predict (img ,model_path )
 
-        if fake_score > 0.5:
-            return jsonify({"error": "Spoof detected"}), 200
+    label =np .argmax (prediction )
 
-        # 🔥 Generate embedding using your Facenet pipeline
-        face_processed = image_loader.extract_face(face_crop)
+    is_real =(label ==1 )
 
-        if face_processed is None:
-            return jsonify({"error": "Face extraction failed"}), 200
+    if is_real :
+        print ("[+] REAL FACE")
+    else :
+        print ("[-] FAKE FACE")
 
-        embedding = image_loader.get_embedding(face_processed)
+    return is_real ,image_bbox 
 
-        if embedding is None:
-            return jsonify({"error": "Embedding generation failed"}), 500
+app =Flask (__name__ )
+CORS (app )
 
-        return jsonify({
-            "status": "success",
-            "embedding": np.asarray(embedding).tolist()
-        }), 200
+video_loader =FacenetVideo ()
+image_loader =FaceLoading ()
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+@app .route ('/generate_embedding',methods =['POST'])
+def generate_embedding ():
+    try :
+        if 'file'not in request .files :
+            return jsonify ({"error":"No file provided"}),400 
 
+        file =request .files ['file']
+        filestr =file .read ()
+        npimg =np .frombuffer (filestr ,np .uint8 )
+        img =cv .imdecode (npimg ,cv .IMREAD_COLOR )
 
-# =====================================
-# VIDEO → EMBEDDING (Registration)
-# =====================================
-@app.route('/train_face', methods=['POST'])
-def train_face():
-    temp_path = None
+        if img is None :
+            return jsonify ({"error":"Failed to decode image"}),400 
 
-    try:
-        if 'file' not in request.files:
-            return jsonify({"error": "Missing video file"}), 400
+        is_real ,bbox =check_real_face (img )
 
-        video_file = request.files['file']
+        if not is_real :
+            return jsonify ({"error":"Spoof detected"}),200 
 
-        if video_file.filename == "":
-            return jsonify({"error": "Empty filename"}), 400
+        x ,y ,w ,h =bbox 
+        face_crop =img [y :y +h ,x :x +w ]
 
-        temp_fd, temp_path = tempfile.mkstemp(suffix=".webm")
-        os.close(temp_fd)
-        video_file.save(temp_path)
+        face_processed =image_loader .extract_face (face_crop )
 
-        cap = cv.VideoCapture(temp_path)
+        if face_processed is None :
+            return jsonify ({"error":"Face extraction failed"}),200 
 
-        if not cap.isOpened():
-            return jsonify({"error": "Cannot open video"}), 500
+        embedding =image_loader .get_embedding (face_processed )
 
-        real_face_detected = False
+        if embedding is None :
+            return jsonify ({"error":"Embedding generation failed"}),500 
 
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
+        return jsonify ({
+        "status":"success",
+        "embedding":np .asarray (embedding ).tolist ()
+        }),200 
 
-            faces = app_face.get(frame)
+    except Exception as e :
+        return jsonify ({"error":str (e )}),500 
 
-            if len(faces) > 0:
-                bbox = faces[0].bbox.astype(int)
-                x1, y1, x2, y2 = bbox
-                face_crop = frame[y1:y2, x1:x2]
+@app .route ('/train_face',methods =['POST'])
+def train_face ():
+    temp_path =None 
 
-                if face_crop.size == 0:
-                    continue
+    try :
+        if 'file'not in request .files :
+            return jsonify ({"error":"Missing video file"}),400 
 
-                real_score, fake_score = anti_spoof.predict(face_crop)
+        video_file =request .files ['file']
 
-                if fake_score > 0.5:
-                    cap.release()
-                    return jsonify({"error": "Spoof detected in video"}), 200
+        if video_file .filename =="":
+            return jsonify ({"error":"Empty filename"}),400 
 
-                real_face_detected = True
-                break
+        temp_fd ,temp_path =tempfile .mkstemp (suffix =".webm")
+        os .close (temp_fd )
+        video_file .save (temp_path )
 
-        cap.release()
+        cap =cv .VideoCapture (temp_path )
 
-        if not real_face_detected:
-            return jsonify({"error": "No real face detected in video"}), 200
+        if not cap .isOpened ():
+            return jsonify ({"error":"Cannot open video"}),500 
 
-        # 🔥 Existing average embedding logic
-        embedding = video_loader.processing(temp_path)
+        embeddings =[]
+        frame_id =0 
 
-        if embedding is None:
-            return jsonify({"error": "Embedding extraction failed"}), 500
+        while True :
+            ret ,frame =cap .read ()
+            if not ret :
+                break 
 
-        return jsonify({
-            "status": "success",
-            "embedding": np.asarray(embedding).tolist()
-        }), 200
+            if frame_id %4 ==0 :
+                is_real ,bbox =check_real_face (frame )
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+                if is_real and bbox is not None :
+                    x ,y ,w ,h =bbox 
+                    face_crop =frame [y :y +h ,x :x +w ]
 
-    finally:
-        if temp_path and os.path.exists(temp_path):
-            os.remove(temp_path)
+                    face_processed =image_loader .extract_face (face_crop )
+                    if face_processed is not None :
+                        embedding =image_loader .get_embedding (face_processed )
+                        if embedding is not None :
+                            embeddings .append (embedding )
 
+            frame_id +=1 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=False)
+        cap .release ()
+
+        if len (embeddings )==0 :
+            return jsonify ({"error":"No real face detected in video"}),200 
+
+        mean_embedding =np .mean (embeddings ,axis =0 )
+        mean_embedding =mean_embedding /np .linalg .norm (mean_embedding )
+
+        return jsonify ({
+        "status":"success",
+        "embedding":np .asarray (mean_embedding ).tolist ()
+        }),200 
+
+    except Exception as e :
+        return jsonify ({"error":str (e )}),500 
+
+    finally :
+        if temp_path and os .path .exists (temp_path ):
+            os .remove (temp_path )
+
+if __name__ =='__main__':
+    app .run (host ='0.0.0.0',port =5001 ,debug =False )

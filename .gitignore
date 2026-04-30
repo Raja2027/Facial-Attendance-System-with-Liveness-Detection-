@@ -38,8 +38,6 @@ venv/
 models/
 *.onnx
 *.h5
-*.pt
-*.pth
 .insightface/
 
 ############################

@@ -1,95 +1,151 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Face Registration</title>
-</head>
-<body>
-
-<h2>Register Person</h2>
-
-<input type="text" id="name" placeholder="Name"><br>
-<input type="text" id="mobile" placeholder="Mobile"><br>
-<input type="email" id="email" placeholder="Email"><br>
-<input type="date" id="dob"><br>
-
-<select id="type">
-    <option value="student">Student</option>
-    <option value="faculty">Faculty</option>
-</select><br><br>
-
-<video id="video" width="400" autoplay muted></video><br>
-<button onclick="startRecording()">Next</button>
-
-<div id="status"></div>
-
-<script>
-
-    let video = document.getElementById("video");
-    let recordedChunks = [];
-    let mediaRecorder;
-
-    async function startRecording() {
-
-        recordedChunks = [];
-
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-
-        document.getElementById("status").innerText = "Recording...";
-
-        mediaRecorder = new MediaRecorder(stream);
-
-        mediaRecorder.ondataavailable = e => {
-            if (e.data.size > 0) {
-                recordedChunks.push(e.data);
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioPass Pro | Central Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
             }
-        };
 
-        mediaRecorder.start();
+            50% {
+                background-position: 100% 50%;
+            }
 
-        // Record for 2 seconds
-        setTimeout(() => {
-            mediaRecorder.stop();
-            document.getElementById("status").innerText = "Processing...";
-        }, 2000);
+            100% {
+                background-position: 0% 50%;
+            }
+        }
 
-        mediaRecorder.onstop = uploadVideo;
-    }
+        .animate-gradient {
+            background: linear-gradient(-45deg, #4ca1af, #c4e0e5, #4ca1af, #c4e0e5);
+            background-size: 400% 400%;
+            animation: gradient 12s ease infinite;
+        }
 
-    function uploadVideo() {
+        .glass {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+        }
 
-        const blob = new Blob(recordedChunks, { type: "video/webm" });
-        const formData = new FormData();
+        .hub-card {
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
 
-        formData.append("video", blob);  // MUST match Python
-        formData.append("name", document.getElementById("name").value);
-        formData.append("mobile", document.getElementById("mobile").value);
-        formData.append("email", document.getElementById("email").value);
-        formData.append("dob", document.getElementById("dob").value);
-        formData.append("type", document.getElementById("type").value);
+        .hub-card:hover {
+            transform: translateY(-12px) scale(1.02);
+            background: rgba(255, 255, 255, 0.35);
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.15);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
 
-        fetch("http://localhost:8080/persons/register-with-video", {
-            method: "POST",
-            body: formData
-        })
-            .then(res => res.json())
-            .then(data => {
+        .square-container {
+            width: min(90vw, 85vh);
+            height: min(90vw, 85vh);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
 
-                if (data.error) {
-                    document.getElementById("status").innerText = data.error;
-                } else {
-                    document.getElementById("status").innerText =
-                        "Registered: " + data.registrationNumber;
-                }
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
 
-            })
-            .catch(err => {
-                document.getElementById("status").innerText = "Error occurred";
-                console.error(err);
-            });
-    }
+        @keyframes floating {
 
-</script>
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+    </style>
+</head>
+
+<body class="animate-gradient h-screen text-slate-800 flex items-center justify-center p-4 font-sans overflow-hidden">
+
+    <div
+        class="glass rounded-[3rem] p-12 square-container shadow-2xl space-y-12 text-center animate-in fade-in zoom-in duration-700">
+
+        <div class="space-y-4">
+            <div class="flex justify-center">
+                <div class="w-20 h-20 rounded-3xl bg-white/40 flex items-center justify-center shadow-lg floating">
+                    <svg class="w-10 h-10 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                        </path>
+                    </svg>
+                </div>
+            </div>
+            <div>
+                <h1 class="text-6xl font-black tracking-tighter italic text-white drop-shadow-sm">
+                    BIOPASS <span class="text-rose-500 font-light">PRO</span>
+                </h1>
+                <p class="text-[10px] font-black tracking-[0.4em] uppercase text-rose-600/60 opacity-80 mt-2">Unified
+                    Biometric Management</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 h-full pb-8">
+            
+            <a href="register.html"
+                class="hub-card glass rounded-[2.5rem] p-8 flex flex-col items-center justify-center space-y-6 group">
+                <div
+                    class="w-16 h-16 rounded-2xl bg-rose-500/10 flex items-center justify-center group-hover:bg-rose-500 transition-colors duration-500">
+                    <svg class="w-8 h-8 text-rose-600 group-hover:text-white transition-colors duration-500" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z">
+                        </path>
+                    </svg>
+                </div>
+                <div class="text-center">
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">Registration</h2>
+                    <p class="text-xs text-slate-500 font-medium mt-2">Enroll new biometric profiles</p>
+                </div>
+                <div
+                    class="px-6 py-2 rounded-full bg-rose-500/10 text-[9px] font-black tracking-widest text-rose-600 uppercase">
+                    Secure Node</div>
+            </a>
+
+            <a href="attendance.html"
+                class="hub-card glass rounded-[2.5rem] p-8 flex flex-col items-center justify-center space-y-6 group">
+                <div
+                    class="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500 transition-colors duration-500">
+                    <svg class="w-8 h-8 text-orange-600 group-hover:text-white transition-colors duration-500"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z">
+                        </path>
+                    </svg>
+                </div>
+                <div class="text-center">
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">Attendance</h2>
+                    <p class="text-xs text-slate-500 font-medium mt-2">Daily terminal tracking</p>
+                </div>
+                <div
+                    class="px-6 py-2 rounded-full bg-orange-500/10 text-[9px] font-black tracking-widest text-orange-600 uppercase">
+                    Scan Terminal</div>
+            </a>
+        </div>
+
+        <div class="pt-4 border-t border-white/20">
+            <p class="text-[8px] font-bold text-slate-400 uppercase tracking-[0.3em]">Institutional Biometric Standard
+                v4.2</p>
+        </div>
+
+    </div>
 
 </body>
+
 </html>

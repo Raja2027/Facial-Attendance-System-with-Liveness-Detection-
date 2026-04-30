@@ -1,6 +1,6 @@
 fastapi
 keras-facenet==0.3.2
-tensorflow
+tensorflow-cpu
 mtcnn==1.0.0 
 opencv-python==4.13.0.92
 numpy

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Registration Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <style>
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .animate-gradient {
+            background: linear-gradient(-45deg, #43c6ac, #191654, #43c6ac, #191654);
+            background-size: 400% 400%;
+            animation: gradient 12s ease infinite;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .step-transition {
+            transition: all 0.5s ease-in-out;
+        }
+
+        .loader {
+            border: 4px solid rgba(67, 198, 172, 0.1);
+            border-left-color: #43c6ac;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .square-container {
+            width: min(90vw, 80vh);
+            height: min(90vw, 80vh);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 30;
+        }
+    </style>
+</head>
+
+<body class="animate-gradient h-screen text-slate-200 flex items-center justify-center p-4 font-sans overflow-hidden">
+
+<div id="main-container" class="relative">
+
+    <div id="step-details" class="glass rounded-[2.5rem] p-10 square-container step-transition">
+        <div class="text-center mb-6">
+            <h1 class="text-4xl font-black text-white tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-indigo-400">
+                Registration
+            </h1>
+            <p class="text-slate-400 mt-2 text-sm font-medium">Link your biometric identity</p>
+        </div>
+
+        <div class="space-y-5">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[9px] font-bold text-black uppercase tracking-[0.2em] mb-1.5 ml-1">Full Name</label>
+                    <input type="text" id="name" placeholder="John Doe"
+                           class="w-full bg-black/20 border border-white/5 rounded-2xl px-5 py-3.5 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all text-white placeholder-slate-600 shadow-inner">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[9px] font-bold text-black uppercase tracking-[0.2em] mb-1.5 ml-1">Mobile</label>
+                        <input type="text" id="mobile" placeholder="10 Digits"
+                               class="w-full bg-black/20 border border-white/5 rounded-2xl px-5 py-3.5 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all text-white placeholder-slate-600 shadow-inner">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-black uppercase tracking-[0.2em] mb-1.5 ml-1">Email</label>
+                        <input type="email" id="email" placeholder="john@email.com"
+                               class="w-full bg-black/20 border border-white/5 rounded-2xl px-5 py-3.5 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all text-white placeholder-slate-600 shadow-inner">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[9px] font-bold text-black uppercase tracking-[0.2em] mb-1.5 ml-1">DOB</label>
+                        <input type="date" id="dob"
+                               class="w-full bg-black/20 border border-white/5 rounded-2xl px-5 py-3.5 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all text-white shadow-inner">
+                    </div>
+                    <div class="relative">
+                        <label class="block text-[9px] font-bold text-black uppercase tracking-[0.2em] mb-1.5 ml-1">Role</label>
+                        <select id="type"
+                                class="w-full bg-black/20 border border-white/5 rounded-2xl px-5 py-3.5 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all text-white appearance-none cursor-pointer shadow-inner pr-10">
+                            <option value="student">Student</option>
+                            <option value="faculty">Faculty</option>
+                        </select>
+                        <div class="absolute right-4 bottom-4 pointer-events-none text-black">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <a href="index.html"
+                   class="flex-1 px-4 py-5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-400 transition text-[10px] font-black uppercase tracking-widest text-center border border-white/5">
+                    Back
+                </a>
+                <button onclick="goToCapture()"
+                        class="flex-[2] bg-emerald-500 hover:bg-emerald-400 text-white font-black py-5 rounded-2xl shadow-xl shadow-emerald-900/20 transform transition active:scale-[0.98] uppercase tracking-widest text-sm">
+                    Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="step-capture" class="hidden glass rounded-[2.5rem] p-10 square-container step-transition">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-black text-white tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-indigo-400">
+                Biometric Link</h1>
+            <p class="text-slate-400 mt-1 text-sm font-medium">Position face in frame</p>
+        </div>
+
+        <div class="relative w-full aspect-square rounded-[2rem] overflow-hidden border-4 border-white/10 bg-black/30 shadow-2xl group mb-6">
+            
+            <video id="video" class="w-full h-full object-cover scale-x-[-1]" autoplay muted></video>
+            <canvas id="overlay" class="scale-x-[-1]"></canvas>
+        </div>
+
+        <div class="flex gap-4 w-full">
+            <button onclick="goToDetails()"
+                    class="flex-1 bg-white/5 hover:bg-white/10 text-slate-400 font-bold py-5 rounded-2xl transition border border-white/5">
+                Edit
+            </button>
+            <button onclick="startRecording()"
+                    class="flex-[3] bg-emerald-500 hover:bg-emerald-400 text-white font-black py-5 rounded-2xl shadow-xl shadow-emerald-900/20 transform transition active:scale-[0.98] uppercase tracking-widest text-sm">
+                Register Profile
+            </button>
+        </div>
+    </div>
+
+    <div id="processing-overlay"
+         class="hidden absolute inset-0 z-50 glass rounded-3xl flex flex-col items-center justify-center space-y-4">
+        <div class="loader"></div>
+        <div class="text-xl font-bold text-white tracking-widest animate-pulse">PROCESSING...</div>
+        <p class="text-slate-400 text-sm">Uploading and securing biometric data</p>
+    </div>
+
+</div>
+
+<div id="error-toast"
+     class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] bg-red-500/90 text-white px-6 py-3 rounded-xl shadow-2xl backdrop-blur-md border border-white/20 transform translate-y-20 transition-all duration-300 pointer-events-none opacity-0">
+    <div class="flex items-center gap-3">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span id="toast-message" class="font-medium text-sm">Error message here</span>
+    </div>
+</div>
+
+<script>
+    let video = document.getElementById("video");
+    let recordedChunks = [];
+    let mediaRecorder;
+    let stream;
+    let modelsReady = false;
+
+    const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model";
+    const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.6 });
+
+    // Load face-api model upfront so it's ready when camera opens
+    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL)
+        .then(() => { modelsReady = true; })
+        .catch(err => console.error("face-api model load error:", err));
+
+    function startTracking() {
+        const overlay = document.getElementById("overlay");
+        const ctx = overlay.getContext("2d");
+
+        async function track() {
+            if (modelsReady && stream && video.readyState === 4 &&
+                !overlay.parentElement.parentElement.classList.contains('hidden')) {
+
+                overlay.width = video.videoWidth;
+                overlay.height = video.videoHeight;
+
+                const detections = await faceapi.detectAllFaces(video, detectorOptions);
+                ctx.clearRect(0, 0, overlay.width, overlay.height);
+                detections.forEach(det => {
+                    const { x, y, width, height } = det.box;
+                    drawFaceBox(ctx, x, y, width, height);
+                });
+            }
+            setTimeout(track, 100);
+        }
+        track();
+    }
+
+    function drawFaceBox(ctx, x, y, w, h) {
+        const len = Math.min(w, h) * 0.2;
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgba(16, 185, 129, 0.5)';
+        ctx.beginPath();
+        ctx.moveTo(x, y + len); ctx.lineTo(x, y); ctx.lineTo(x + len, y);
+        ctx.moveTo(x + w - len, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + len);
+        ctx.moveTo(x, y + h - len); ctx.lineTo(x, y + h); ctx.lineTo(x + len, y + h);
+        ctx.moveTo(x + w - len, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - len);
+        ctx.stroke();
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('error-toast');
+        const msg = document.getElementById('toast-message');
+        msg.innerText = message;
+        toast.classList.remove('translate-y-20', 'opacity-0');
+        toast.classList.add('translate-y-0', 'opacity-100');
+        setTimeout(() => {
+            toast.classList.add('translate-y-20', 'opacity-0');
+            toast.classList.remove('translate-y-0', 'opacity-100');
+        }, 3000);
+    }
+
+    function validateForm() {
+        const name = document.getElementById('name').value.trim();
+        const mobile = document.getElementById('mobile').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const dob = document.getElementById('dob').value;
+
+        if (!name) return "Full Name is required.";
+        if (name.length < 3) return "Name must be at least 3 characters.";
+        if (!/^[a-zA-Z\s]+$/.test(name)) return "Name should only contain letters and spaces.";
+
+        if (!mobile) return "Mobile number is required.";
+        if (!/^\d{10}$/.test(mobile)) return "Enter a valid 10-digit mobile number.";
+
+        if (!email) return "Email address is required.";
+        if (!/\S+@\S+\.\S+/.test(email)) return "Please enter a valid email address.";
+
+        if (!dob) return "Date of birth is required.";
+        const dobDate = new Date(dob);
+        if (dobDate > new Date()) return "Date of birth cannot be in the future.";
+
+        return null;
+    }
+
+    function goToCapture() {
+        const error = validateForm();
+        if (error) {
+            showToast(error);
+            return;
+        }
+        document.getElementById('step-details').classList.add('hidden');
+        document.getElementById('step-capture').classList.remove('hidden');
+        startCamera();
+    }
+
+    function goToDetails() {
+        stopCamera();
+        document.getElementById('step-capture').classList.add('hidden');
+        document.getElementById('step-details').classList.remove('hidden');
+    }
+
+    async function startCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            video.onloadedmetadata = () => { video.play(); startTracking(); };
+        } catch (err) {
+            console.error("Camera access denied", err);
+        }
+    }
+
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
+
+    async function startRecording() {
+        recordedChunks = [];
+
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+
+        mediaRecorder.start();
+
+        // Capture and flip the frame for natural preview match
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0);
+        localStorage.setItem('capturedFace', canvas.toDataURL("image/jpeg"));
+
+        setTimeout(() => {
+            mediaRecorder.stop();
+            showProcessing(true);
+        }, 2000);
+
+        mediaRecorder.onstop = uploadVideo;
+    }
+
+    function showProcessing(show) {
+        const overlay = document.getElementById('processing-overlay');
+        if (show) {
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        } else {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        }
+    }
+
+    function uploadVideo() {
+        const blob = new Blob(recordedChunks, { type: "video/webm" });
+        const formData = new FormData();
+
+        formData.append("video", blob);
+        formData.append("name", document.getElementById("name").value);
+        formData.append("mobile", document.getElementById("mobile").value);
+        formData.append("email", document.getElementById("email").value);
+        formData.append("dob", document.getElementById("dob").value);
+        formData.append("type", document.getElementById("type").value);
+
+        fetch("/persons/register-with-video", {
+            method: "POST",
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                showProcessing(false);
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    const regData = {
+                        name: document.getElementById("name").value,
+                        registrationNumber: data.registrationNumber,
+                        type: document.getElementById("type").value
+                    };
+                    localStorage.setItem('regData', JSON.stringify(regData));
+                    window.location.href = 'success.html';
+                }
+            })
+            .catch(err => {
+                showProcessing(false);
+                alert("An error occurred during registration.");
+                console.error(err);
+            });
+    }
+</script>
+</body>
+
+</html>

@@ -19,13 +19,11 @@ public class Student {
     private String type;
     private String registrationNumber;
 
-    private List<Double> embedding;   // 512-d vector
+    private List<Double> embedding;   
 
-    // 🔹 Default Constructor (Required by MongoDB)
     public Student() {
     }
 
-    // 🔹 Full Constructor (THIS FIXES YOUR ERROR)
     public Student(String name,
                    String mobile,
                    String email,
@@ -42,8 +40,6 @@ public class Student {
         this.registrationNumber = registrationNumber;
         this.embedding = embedding;
     }
-
-    // 🔹 Getters & Setters
 
     public String getId() {
         return id;

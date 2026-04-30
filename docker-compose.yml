@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  ai-engine:
+    build:
+      context: .
+      dockerfile: ./AI/Dockerfile
+    container_name: biopass-ai
+    ports:
+      - "5001:5001"
+    restart: unless-stopped
+    # Use a large enough shared memory size if PyTorch/OpenCV needs it
+    shm_size: '2gb'
+
+  backend:
+    build:
+      context: ./attendanceSystem
+      dockerfile: Dockerfile
+    container_name: biopass-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # Inject the Docker internal network URL for the AI Engine
+      - AI_SERVER_URL=http://ai-engine:5001
+    depends_on:
+      - ai-engine
+    restart: unless-stopped

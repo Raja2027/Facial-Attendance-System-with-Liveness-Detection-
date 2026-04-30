@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Successful | BioPass</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .animate-gradient {
+            background: linear-gradient(-45deg, #43c6ac, #191654, #43c6ac, #191654);
+            background-size: 400% 400%;
+            animation: gradient 12s ease infinite;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .square-container {
+            width: min(90vw, 80vh);
+            height: min(90vw, 80vh);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .corner-border {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-color: #10b981;
+            border-style: solid;
+            z-index: 20;
+            opacity: 0.6;
+            filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.4));
+        }
+        .corner-tl { top: 20px; left: 20px; border-width: 3px 0 0 3px; border-top-left-radius: 12px; }
+        .corner-tr { top: 20px; right: 20px; border-width: 3px 3px 0 0; border-top-right-radius: 12px; }
+        .corner-bl { bottom: 20px; left: 20px; border-width: 0 0 3px 3px; border-bottom-left-radius: 12px; }
+        .corner-br { bottom: 20px; right: 20px; border-width: 0 3px 3px 0; border-bottom-right-radius: 12px; }
+        .id-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .id-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body class="animate-gradient h-screen text-slate-200 flex flex-col items-center justify-center p-4 font-sans overflow-hidden">
+
+<div class="glass rounded-[2.5rem] p-10 square-container shadow-2xl space-y-8 animate-in fade-in zoom-in duration-700">
+
+    <div class="text-center space-y-1">
+        <h1 class="text-5xl font-black text-white tracking-tighter italic bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-indigo-400">SUCCESS!</h1>
+        <p class="text-emerald-400 font-black tracking-[0.3em] uppercase text-[9px] opacity-80">Biometric Profile Secured</p>
+    </div>
+
+    <div class="id-card relative w-full aspect-[1.6/1] rounded-[2rem] overflow-hidden p-8 flex flex-col justify-between">
+        <div class="corner-border corner-tl"></div>
+        <div class="corner-border corner-tr"></div>
+        <div class="corner-border corner-bl"></div>
+        <div class="corner-border corner-br"></div>
+
+        <div class="flex justify-between items-start">
+            <div class="space-y-0 text-left">
+                <div class="text-[9px] font-black text-emerald-400 tracking-[0.3em] uppercase opacity-60">Identity Node</div>
+                <div class="text-2xl font-black text-white tracking-tighter">BIOPASS <span class="text-emerald-500 font-light">PRO</span></div>
+            </div>
+            <div class="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                <svg class="w-7 h-7 text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+            </div>
+        </div>
+
+        <div class="flex gap-8 items-center">
+            <div id="photo-container" class="w-28 h-28 rounded-3xl bg-black/40 border border-white/5 flex items-center justify-center shadow-inner relative overflow-hidden group">
+                <svg class="w-14 h-14 text-white/10" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>
+                <div class="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-colors"></div>
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500/30"></div>
+            </div>
+
+            <div class="flex-1 text-left space-y-4">
+                <div>
+                    <div class="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Authenticated Holder</div>
+                    <div id="disp-name" class="text-2xl font-black text-white leading-none tracking-tight">--------</div>
+                </div>
+                <div class="flex gap-10">
+                    <div>
+                        <div class="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Protocol ID</div>
+                        <div id="disp-reg" class="text-sm font-black text-emerald-400 font-mono italic">#--------</div>
+                    </div>
+                    <div>
+                        <div class="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Clearance</div>
+                        <div id="disp-type" class="text-[9px] font-black text-white px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 uppercase tracking-widest">ACTIVE</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center border-t border-white/5 pt-5">
+            <div class="text-[7px] font-black text-slate-600 tracking-[0.2em] uppercase leading-none">Global Biometric Standard Level 7</div>
+            <div class="flex gap-2">
+                <div class="w-1 h-1 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,1)]"></div>
+                <div class="w-1 h-1 rounded-full bg-emerald-400 opacity-20"></div>
+                <div class="w-1 h-1 rounded-full bg-emerald-400 opacity-10"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex gap-4 w-full">
+        <a href="register.html" class="flex-1 px-8 py-5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-400 transition text-[10px] font-black uppercase tracking-widest text-center border border-white/5">
+            New Identity
+        </a>
+        <a href="attendance.html" class="flex-[2] px-8 py-5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white transition text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-900/20 text-center">
+            Launch Terminal
+        </a>
+    </div>
+    <div class="text-center">
+        <a href="index.html" class="text-[9px] font-black text-slate-600 hover:text-emerald-500 transition uppercase tracking-[0.3em]">Return to Hub</a>
+    </div>
+</div>
+
+<script>
+    window.addEventListener('load', () => {
+        const data = JSON.parse(localStorage.getItem('regData') || '{}');
+        const capturedFace = localStorage.getItem('capturedFace');
+
+        if (data.name) {
+            document.getElementById('disp-name').innerText = data.name;
+            document.getElementById('disp-reg').innerText = "#" + (data.registrationNumber || '00000');
+            document.getElementById('disp-type').innerText = (data.type || 'USER').toUpperCase();
+
+            if (capturedFace) {
+                const container = document.getElementById('photo-container');
+                container.innerHTML = `<img src="${capturedFace}" class="w-full h-full object-cover">`;
+            }
+        } else {
+            window.location.href = 'index.html';
+        }
+    });
+</script>
+</body>
+</html>

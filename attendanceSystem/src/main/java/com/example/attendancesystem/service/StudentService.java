@@ -4,6 +4,7 @@ import com.example.attendancesystem.model.Student;
 import com.example.attendancesystem.repository.StudentRepository;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -17,6 +18,9 @@ import java.util.Map;
 
 @Service
 public class StudentService {
+
+    @Value("${ai.server.url:http://localhost:5001}")
+    private String aiServerUrl;
 
     private final StudentRepository repository;
     private final SequenceGeneratorService sequenceGenerator;
@@ -48,7 +52,7 @@ public class StudentService {
 
         ResponseEntity<Map> response =
                 restTemplate.postForEntity(
-                        "http://localhost:5001/generate_embedding",
+                        aiServerUrl + "/generate_embedding",
                         request,
                         Map.class
                 );
@@ -65,7 +69,6 @@ public class StudentService {
         System.out.println("Embedding size: " + embedding.size());
         System.out.println("First 5 values: " + embedding.subList(0, 5));
 
-        // 🔥 Mongo Vector Search
         Student matchedStudent = repository.findBestMatch(embedding);
 
         if (matchedStudent == null) {
@@ -86,13 +89,11 @@ public class StudentService {
                                      String type,
                                      MultipartFile video) throws Exception {
 
-        // Generate Registration Number
         int year = Year.now().getValue();
         String prefix = type.equalsIgnoreCase("student") ? "STD" : "FAC";
         long sequence = sequenceGenerator.generateSequence(prefix + "_sequence_" + year);
         String regNo = String.format("%s%d%04d", prefix, year, sequence);
 
-        // Call Python Server
         RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
@@ -112,7 +113,7 @@ public class StudentService {
 
         ResponseEntity<Map> response =
                 restTemplate.postForEntity(
-                        "http://localhost:5001/train_face",
+                        aiServerUrl + "/train_face",
                         requestEntity,
                         Map.class
                 );
@@ -126,7 +127,6 @@ public class StudentService {
         List<Double> embedding =
                 (List<Double>) response.getBody().get("embedding");
 
-        // Save to MongoDB
         Student person = new Student(
                 name,
                 mobile,
