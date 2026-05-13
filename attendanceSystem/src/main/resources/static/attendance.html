@@ -65,7 +65,10 @@
 <script>
     function requireAuth() {
         const token = localStorage.getItem("authToken");
-        if (!token) {
+        const expiresAt = localStorage.getItem("authExpiresAt");
+        if (!token || (expiresAt && new Date(expiresAt) <= new Date())) {
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("authExpiresAt");
             window.location.href = "login.html?next=attendance.html";
             return null;
         }
@@ -169,19 +172,35 @@
                 },
                 body: formData
             })
-                .then(res => {
+                .then(async res => {
                     if (res.status === 401 || res.status === 403) {
                         localStorage.removeItem("authToken");
+                        localStorage.removeItem("authExpiresAt");
                         window.location.href = "login.html?next=attendance.html";
                         return Promise.reject(new Error("Unauthorized"));
                     }
-                    return res.json();
+
+                    const text = await res.text();
+                    let data = {};
+                    if (text) {
+                        try {
+                            data = JSON.parse(text);
+                        } catch (e) {
+                            throw new Error("Server returned " + res.status + " instead of JSON");
+                        }
+                    }
+
+                    if (!res.ok) {
+                        throw new Error(data.error || "Server error " + res.status);
+                    }
+
+                    return data;
                 })
                 .then(data => {
                     if (data.status === "success") {
                         statusText.innerText = "✓ Present: " + data.name + (data.regNo ? " (" + data.regNo + ")" : "");
                     } else {
-                        statusText.innerText = "✗ Identity Unknown";
+                        statusText.innerText = data.error || "✗ Identity Unknown";
                     }
                     setTimeout(() => {
                         isProcessing = false;
@@ -189,7 +208,8 @@
                     }, 3000);
                 })
                 .catch(err => {
-                    statusText.innerText = "Communication Error";
+                    if (err.message === "Unauthorized") return;
+                    statusText.innerText = err.message || "Communication Error";
                     console.error(err);
                     setTimeout(() => { isProcessing = false; statusText.innerText = "System Ready"; }, 3000);
                 });
