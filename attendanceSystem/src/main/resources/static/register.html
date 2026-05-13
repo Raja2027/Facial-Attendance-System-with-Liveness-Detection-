@@ -180,6 +180,17 @@
 </div>
 
 <script>
+    function requireAuth() {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+            window.location.href = "login.html?next=register.html";
+            return null;
+        }
+        return token;
+    }
+
+    const authToken = requireAuth();
+
     let video = document.getElementById("video");
     let recordedChunks = [];
     let mediaRecorder;
@@ -350,28 +361,78 @@
         formData.append("dob", document.getElementById("dob").value);
         formData.append("type", document.getElementById("type").value);
 
-        fetch("/persons/register-with-video", {
+        fetch("/persons/register-with-video-async", {
             method: "POST",
+            headers: {
+                "Authorization": "Bearer " + authToken
+            },
             body: formData
         })
-            .then(res => res.json())
+            .then(res => {
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem("authToken");
+                    window.location.href = "login.html?next=register.html";
+                    return Promise.reject(new Error("Unauthorized"));
+                }
+                return res.json();
+            })
             .then(data => {
-                showProcessing(false);
                 if (data.error) {
+                    showProcessing(false);
                     alert("Error: " + data.error);
                 } else {
-                    const regData = {
-                        name: document.getElementById("name").value,
-                        registrationNumber: data.registrationNumber,
-                        type: document.getElementById("type").value
-                    };
-                    localStorage.setItem('regData', JSON.stringify(regData));
-                    window.location.href = 'success.html';
+                    pollRegistrationJob(data.id);
                 }
             })
             .catch(err => {
                 showProcessing(false);
-                alert("An error occurred during registration.");
+                if (err.message !== "Unauthorized") {
+                    alert("An error occurred during registration.");
+                }
+                console.error(err);
+            });
+    }
+
+    function pollRegistrationJob(jobId) {
+        fetch("/persons/registration-jobs/" + jobId, {
+            headers: {
+                "Authorization": "Bearer " + authToken
+            }
+        })
+            .then(res => {
+                if (res.status === 401 || res.status === 403) {
+                    localStorage.removeItem("authToken");
+                    window.location.href = "login.html?next=register.html";
+                    return Promise.reject(new Error("Unauthorized"));
+                }
+                return res.json();
+            })
+            .then(job => {
+                if (job.status === "COMPLETED") {
+                    showProcessing(false);
+                    const regData = {
+                        name: document.getElementById("name").value,
+                        registrationNumber: job.registrationNumber,
+                        type: document.getElementById("type").value
+                    };
+                    localStorage.setItem('regData', JSON.stringify(regData));
+                    window.location.href = 'success.html';
+                    return;
+                }
+
+                if (job.status === "FAILED") {
+                    showProcessing(false);
+                    alert("Error: " + (job.message || "Registration failed"));
+                    return;
+                }
+
+                setTimeout(() => pollRegistrationJob(jobId), 1500);
+            })
+            .catch(err => {
+                showProcessing(false);
+                if (err.message !== "Unauthorized") {
+                    alert("Could not check registration job status.");
+                }
                 console.error(err);
             });
     }

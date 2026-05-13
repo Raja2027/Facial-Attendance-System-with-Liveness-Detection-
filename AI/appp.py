@@ -1,5 +1,7 @@
 import os 
 import sys 
+import time
+import logging
 
 sys .path .append (os .path .abspath ("../antiSpoofing"))
 
@@ -21,12 +23,18 @@ from flask_cors import CORS
 from app .real_time_loading .loading_via_video import FacenetVideo 
 from app .real_time_loading .Facenet import FaceLoading 
 
+logging.basicConfig(
+level=os.getenv("LOG_LEVEL", "INFO"),
+format="%(asctime)s %(levelname)s %(name)s %(message)s"
+)
+logger =logging .getLogger ("biopass-ai")
+
 def check_real_face (image ):
 
     image_bbox =model_test .get_bbox (image )
 
     if image_bbox is None :
-        print ("[!] No face detected")
+        logger .warning ("No face detected during liveness check")
         return False ,None 
 
     prediction =np .zeros ((1 ,3 ))
@@ -58,9 +66,9 @@ def check_real_face (image ):
     is_real =(label ==1 )
 
     if is_real :
-        print ("[+] REAL FACE")
+        logger .info ("Liveness check passed")
     else :
-        print ("[-] FAKE FACE")
+        logger .warning ("Liveness check failed: spoof suspected")
 
     return is_real ,image_bbox 
 
@@ -69,6 +77,30 @@ CORS (app )
 
 video_loader =FacenetVideo ()
 image_loader =FaceLoading ()
+
+@app .before_request
+def start_request_timer ():
+    request .start_time =time .time ()
+
+@app .after_request
+def log_request (response ):
+    duration_ms =round ((time .time ()-getattr (request ,"start_time",time .time ()))*1000 ,2 )
+    logger .info (
+    "request method=%s path=%s status=%s durationMs=%s",
+    request .method ,
+    request .path ,
+    response .status_code ,
+    duration_ms 
+    )
+    return response 
+
+@app .route ('/health',methods =['GET'])
+def health ():
+    return jsonify ({
+    "status":"UP",
+    "service":"biopass-ai",
+    "modelsLoaded":True 
+    }),200 
 
 @app .route ('/generate_embedding',methods =['POST'])
 def generate_embedding ():
@@ -108,6 +140,7 @@ def generate_embedding ():
         }),200 
 
     except Exception as e :
+        logger .exception ("generate_embedding failed")
         return jsonify ({"error":str (e )}),500 
 
 @app .route ('/train_face',methods =['POST'])
@@ -169,6 +202,7 @@ def train_face ():
         }),200 
 
     except Exception as e :
+        logger .exception ("train_face failed")
         return jsonify ({"error":str (e )}),500 
 
     finally :

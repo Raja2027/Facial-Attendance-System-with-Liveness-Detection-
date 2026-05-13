@@ -63,6 +63,17 @@
 </div>
 
 <script>
+    function requireAuth() {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+            window.location.href = "login.html?next=attendance.html";
+            return null;
+        }
+        return token;
+    }
+
+    const authToken = requireAuth();
+
     const video = document.getElementById("video");
     const overlay = document.getElementById("overlay");
     const ctx = overlay.getContext("2d");
@@ -153,9 +164,19 @@
 
             fetch("/persons/mark-attendance", {
                 method: "POST",
+                headers: {
+                    "Authorization": "Bearer " + authToken
+                },
                 body: formData
             })
-                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 401 || res.status === 403) {
+                        localStorage.removeItem("authToken");
+                        window.location.href = "login.html?next=attendance.html";
+                        return Promise.reject(new Error("Unauthorized"));
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     if (data.status === "success") {
                         statusText.innerText = "✓ Present: " + data.name + (data.regNo ? " (" + data.regNo + ")" : "");

@@ -59,5 +59,32 @@ Because this application relies on a complex stack of Java, Python, and C++ imag
 - `/AI`: Contains the Flask server that exposes the `/train_face` and `/generate_embedding` API routes.
 - `/antiSpoofing`: Contains the PyTorch models and utility scripts for detecting fake faces (photos/videos).
 
+## Production Configuration
+
+For Render backend deployment, configure these environment variables:
+
+```bash
+MONGODB_URI=your_mongodb_atlas_connection_string
+AI_SERVER_URL=https://your-hugging-face-space-url
+ADMIN_USERNAME=your_admin_username
+ADMIN_PASSWORD=your_strong_admin_password
+JWT_SECRET=your_long_random_secret_at_least_32_chars
+JWT_TTL_MINUTES=480
+RATE_LIMIT_ATTENDANCE_PER_MINUTE=30
+RATE_LIMIT_REGISTER_PER_MINUTE=6
+```
+
+The backend now includes:
+- JWT admin login at `/auth/login`
+- protected `/persons/**` APIs
+- request rate limiting for attendance and registration
+- background registration jobs via `/persons/register-with-video-async`
+- Spring Boot Actuator health/metrics endpoints
+- AI service health checks through `/actuator/health`
+
+For the Hugging Face AI service, expose the Flask app as before. The AI engine now also provides:
+- `/health`
+- structured request/error logs
+
 ## License
 MIT License
