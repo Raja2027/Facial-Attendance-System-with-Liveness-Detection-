@@ -63,20 +63,6 @@
 </div>
 
 <script>
-    function requireAuth() {
-        const token = localStorage.getItem("authToken");
-        const expiresAt = localStorage.getItem("authExpiresAt");
-        if (!token || (expiresAt && new Date(expiresAt) <= new Date())) {
-            localStorage.removeItem("authToken");
-            localStorage.removeItem("authExpiresAt");
-            window.location.href = "login.html?next=attendance.html";
-            return null;
-        }
-        return token;
-    }
-
-    const authToken = requireAuth();
-
     const video = document.getElementById("video");
     const overlay = document.getElementById("overlay");
     const ctx = overlay.getContext("2d");
@@ -167,19 +153,9 @@
 
             fetch("/persons/mark-attendance", {
                 method: "POST",
-                headers: {
-                    "Authorization": "Bearer " + authToken
-                },
                 body: formData
             })
                 .then(async res => {
-                    if (res.status === 401 || res.status === 403) {
-                        localStorage.removeItem("authToken");
-                        localStorage.removeItem("authExpiresAt");
-                        window.location.href = "login.html?next=attendance.html";
-                        return Promise.reject(new Error("Unauthorized"));
-                    }
-
                     const text = await res.text();
                     let data = {};
                     if (text) {
@@ -208,7 +184,6 @@
                     }, 3000);
                 })
                 .catch(err => {
-                    if (err.message === "Unauthorized") return;
                     statusText.innerText = err.message || "Communication Error";
                     console.error(err);
                     setTimeout(() => { isProcessing = false; statusText.innerText = "System Ready"; }, 3000);

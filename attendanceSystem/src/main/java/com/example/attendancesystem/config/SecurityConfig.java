@@ -12,6 +12,7 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -38,6 +39,7 @@ public class SecurityConfig {
                                 "/",
                                 "/index.html",
                                 "/login.html",
+                                "/dashboard.html",
                                 "/register.html",
                                 "/attendance.html",
                                 "/success.html",
@@ -46,6 +48,7 @@ public class SecurityConfig {
                                 "/actuator/health/**",
                                 "/actuator/info"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/persons/mark-attendance").permitAll()
                         .requestMatchers("/persons/**", "/admin/**", "/actuator/**").authenticated()
                         .anyRequest().permitAll()
                 )
