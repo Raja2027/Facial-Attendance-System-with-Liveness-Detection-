@@ -16,4 +16,8 @@ public interface StudentRepository extends MongoRepository<Student, String> {
                     "limit: 1 } }"
     })
     Student findBestMatch(List<Double> embedding);
+
+    long countByTypeIgnoreCase(String type);
+
+    List<Student> findTop100ByOrderByRegistrationNumberAsc();
 }

@@ -46,7 +46,7 @@ public class SecurityConfig {
                                 "/actuator/health/**",
                                 "/actuator/info"
                         ).permitAll()
-                        .requestMatchers("/persons/**", "/actuator/**").authenticated()
+                        .requestMatchers("/persons/**", "/admin/**", "/actuator/**").authenticated()
                         .anyRequest().permitAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))

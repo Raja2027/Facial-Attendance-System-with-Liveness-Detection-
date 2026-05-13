@@ -1,6 +1,8 @@
 package com.example.attendancesystem.service;
 
 import com.example.attendancesystem.model.Student;
+import com.example.attendancesystem.model.AttendanceRecord;
+import com.example.attendancesystem.repository.AttendanceRecordRepository;
 import com.example.attendancesystem.repository.StudentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,14 +37,17 @@ public class StudentService {
     private final SequenceGeneratorService sequenceGenerator;
     private final RestTemplate restTemplate;
     private final AttendanceCacheService attendanceCacheService;
+    private final AttendanceRecordRepository attendanceRecordRepository;
 
     public StudentService(StudentRepository repository,
                           SequenceGeneratorService sequenceGenerator,
                           RestTemplateBuilder restTemplateBuilder,
-                          AttendanceCacheService attendanceCacheService) {
+                          AttendanceCacheService attendanceCacheService,
+                          AttendanceRecordRepository attendanceRecordRepository) {
         this.repository = repository;
         this.sequenceGenerator = sequenceGenerator;
         this.attendanceCacheService = attendanceCacheService;
+        this.attendanceRecordRepository = attendanceRecordRepository;
         this.restTemplate = restTemplateBuilder
                 .setConnectTimeout(Duration.ofSeconds(10))
                 .setReadTimeout(Duration.ofSeconds(120))
@@ -101,6 +106,11 @@ public class StudentService {
 
         log.info("Attendance matched name={} regNo={}",
                 matchedStudent.getName(), matchedStudent.getRegistrationNumber());
+        attendanceRecordRepository.save(new AttendanceRecord(
+                matchedStudent,
+                "PRESENT",
+                "Attendance marked successfully"
+        ));
 
         Map<String, Object> result = Map.of(
                 "status", "success",
